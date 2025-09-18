@@ -1,0 +1,53 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Unit test / coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs and runtime
+logs/
+*.log
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env
+.env.*
+
+# Project config generated locally
+config.yaml
+
+# Data artifacts
+backtest_results/
+*.sqlite
+
+# Cache
+.cache/
+
+# Uvicorn/fastapi reload cache
+uvicorn*.pid
+
+# Wallex PDFs and large docs (keep source if needed)
+*.pdf

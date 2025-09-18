@@ -1,0 +1,47 @@
+app:
+  mode: paper # paper | live
+  loop_interval_sec: 5
+  symbol: BTC-TMN
+  base_currency: BTC
+  quote_currency: TMN
+  budget: 10000000 # in quote units for paper sizing
+
+risk:
+  risk_per_trade_pct: 0.5   # percent of total equity to risk per trade
+  max_daily_loss_pct: 2.0   # circuit breaker
+  take_profit_rr: 1.5       # take-profit at 1.5x risk
+
+wallex:
+  base_url: "https://api.wallex.ir"      # per swagger servers.url
+  ws_url:   "wss://api.wallex.ir/ws"     # per docs in your message
+  recv_window_ms: 5000
+  rate_limit:
+    requests_per_min: 120
+    burst: 20
+  endpoints:
+    candles: "/v1/udf/history"        # GET symbol,resolution,from,to
+    latest_trades: "/v1/trades"        # GET symbol=SYMBOL (to derive last price)
+    balances: "/v1/account/balances"  # GET (x-api-key)
+    orders: "/v1/account/orders"      # POST for create, DELETE for cancel
+  # Transform app symbol to match API format: as_is | remove_dash | lowercase | uppercase | remove_dash_uppercase
+  symbol_transform: remove_dash_uppercase
+  # Override auth header names here if your environment uses different ones
+  auth_headers:
+    key: x-api-key
+    sign: ""      # not used for spot according to swagger
+    ts: ""        # not used for spot according to swagger
+
+symbols:
+  BTC-TMN:
+    min_notional: 50000      # example TMN minimum (adjust per market)
+    price_precision: 0
+    quantity_precision: 6
+
+strategy:
+  name: rsi_ma
+  params:
+    rsi_period: 14
+    rsi_buy: 35
+    rsi_sell: 65
+    ma_fast: 9
+    ma_slow: 21

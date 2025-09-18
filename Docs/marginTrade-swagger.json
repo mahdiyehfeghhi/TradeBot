@@ -1,0 +1,1562 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "This is the documentation for the Margin Trading system.",
+    "title": "Wallex Margin-trade API",
+    "contact": {
+      "name": "Wallex",
+      "url": "https://wallex.ir",
+      "email": "info@wallex.net"
+    },
+    "version": "1.0"
+  },
+  "paths": {
+    "/margin-trade/v1/orders": {
+      "get": {
+        "operationId": "getOrders",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List margin orders",
+        "parameters": [
+          {
+            "description": "List active/inactive orders",
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Market symbol",
+            "name": "market",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Position side (long/short)",
+            "name": "position_side",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Position ID",
+            "name": "position_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Position type",
+            "name": "position_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Order side",
+            "name": "side",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/dto.Order"
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions": {
+      "get": {
+        "operationId": "getPositions",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "List margin positions",
+        "parameters": [
+          {
+            "description": "List active/inactive positions",
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Position side (long/short)",
+            "name": "position_side",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "market symbol (e.g. USDTTMN)",
+            "name": "market",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/dto.Position"
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "openPosition",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Open a margin position",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.OpenRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.Position"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions/{id}": {
+      "get": {
+        "operationId": "getPositionId",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Get a margin position",
+        "parameters": [
+          {
+            "description": "Position ID",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.Position"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions/{id}/close": {
+      "patch": {
+        "operationId": "closePositionId",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Close a margin position",
+        "parameters": [
+          {
+            "description": "Position ID",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.CloseRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.Position"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions/{id}/collateral": {
+      "patch": {
+        "operationId": "editColateral",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Update margin positions collateral",
+        "parameters": [
+          {
+            "description": "Position ID",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.AddCollateralRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.Position"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions/{id}/profit": {
+      "post": {
+        "operationId": "profitPositionID",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Calculate",
+        "parameters": [
+          {
+            "description": "Position ID",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.CalculateProfitRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.CalculateProfitResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/positions/{id}/sltp": {
+      "patch": {
+        "operationId": "editSltp",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Update stop-loss and take-profit prices",
+        "parameters": [
+          {
+            "description": "Position ID",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.UpdateSLTPRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.Position"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/public/loan": {
+      "post": {
+        "operationId": "calculateLoan",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "Public"
+        ],
+        "summary": "calculate min, max Collateral and loan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.CalculateLoanRequest"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.CalculateLoanResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/public/dry-run": {
+      "post": {
+        "operationId": "detailedInformation",
+        "tags": [
+          "Public"
+        ],
+        "summary": "info a margin position before creation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dto.OpenRequest"
+              }
+            }
+          },
+          "description": "Open request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.DryRunResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/public/markets": {
+      "get": {
+        "operationId": "getMarkets",
+        "tags": [
+          "Public"
+        ],
+        "summary": "List active markets",
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/dto.Market"
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/public/ratio/{market}": {
+      "get": {
+        "operationId": "publicRatio",
+        "tags": [
+          "Public"
+        ],
+        "summary": "Positions Ratio of long and short",
+        "parameters": [
+          {
+            "description": "market e.g. USDTTMN",
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.PositionsRatioResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/user/levels": {
+      "get": {
+        "operationId": "?getLevels",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "User"
+        ],
+        "summary": "margin trade user levels",
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.GetUserLevelResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/user/levels/{market}": {
+      "get": {
+        "operationId": "getLevelsMarket",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "User"
+        ],
+        "summary": "margin trade user levels",
+        "parameters": [
+          {
+            "description": "market e.g. USDTTMN",
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.GetUserLevelResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/margin-trade/v1/user/pnl": {
+      "get": {
+        "operationId": "getPnl",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "tags": [
+          "User"
+        ],
+        "summary": "User PNL",
+        "responses": {
+          "200": {
+            "description": "scheme of `result` field in success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.CalculatePnlResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request time out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dto.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.wallex.ir"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Use your API key to authenticate requests."
+      }
+    },
+    "schemas": {
+      "dto.AddCollateralHistory": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "position_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "dto.AddCollateralRequest": {
+        "type": "object",
+        "properties": {
+          "change": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.Amount": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.CalculateLoanRequest": {
+        "type": "object",
+        "properties": {
+          "collateral": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "open_price": {
+            "type": "string"
+          },
+          "risk_coef": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.CalculateLoanResponse": {
+        "type": "object",
+        "properties": {
+          "collateral": {
+            "$ref": "#/components/schemas/dto.CollateralRange"
+          },
+          "loan": {
+            "$ref": "#/components/schemas/dto.Amount"
+          }
+        }
+      },
+      "dto.CalculatePnlResponse": {
+        "type": "object",
+        "properties": {
+          "collaterals": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "loans": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "profits": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "total": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "dto.CalculateProfitRequest": {
+        "type": "object",
+        "properties": {
+          "close_price": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.CalculateProfitResponse": {
+        "type": "object",
+        "properties": {
+          "fee": {
+            "type": "string"
+          },
+          "filled_percentage": {
+            "type": "string"
+          },
+          "interest": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "price": {
+            "type": "string"
+          },
+          "profit": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "side": {
+            "type": "string"
+          },
+          "volume": {
+            "$ref": "#/components/schemas/dto.Amount"
+          }
+        }
+      },
+      "dto.CloseRequest": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.CollateralRange": {
+        "type": "object",
+        "properties": {
+          "max": {
+            "type": "string"
+          },
+          "min": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.DryRunResponse": {
+        "type": "object",
+        "properties": {
+          "call_price": {
+            "type": "string"
+          },
+          "collateral": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "extend_fee": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "extend_time": {
+            "type": "integer"
+          },
+          "liquidity_price": {
+            "type": "string"
+          },
+          "loan": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "market": {
+            "type": "string"
+          },
+          "max_age": {
+            "type": "integer"
+          },
+          "open_fee": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "open_price": {
+            "type": "string"
+          },
+          "risk_coef": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          },
+          "stop_loss": {
+            "type": "string"
+          },
+          "take_profit": {
+            "type": "string"
+          },
+          "trade_fee": {
+            "$ref": "#/components/schemas/dto.Amount"
+          }
+        }
+      },
+      "dto.ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "dto.FailedPosition": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "collateral_amount": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "loan_amount": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "sub_account_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.GetUserLevelResponse": {
+        "type": "object",
+        "properties": {
+          "levels": {
+            "$ref": "#/components/schemas/settings.UserLevels"
+          },
+          "user_level": {
+            "type": "integer"
+          }
+        }
+      },
+      "dto.Market": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string"
+          },
+          "liquidity_margin": {
+            "type": "string"
+          },
+          "max_age": {
+            "type": "integer"
+          },
+          "max_risk_coef": {
+            "type": "string"
+          },
+          "min_risk_coef": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "risk_coef_step": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.OnboardingRequest": {
+        "type": "object",
+        "properties": {
+          "accepted_quiz": {
+            "type": "boolean"
+          }
+        }
+      },
+      "dto.OpenRequest": {
+        "type": "object",
+        "properties": {
+          "collateral": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "open_price": {
+            "type": "string"
+          },
+          "risk_coef": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          },
+          "stop_loss": {
+            "type": "string"
+          },
+          "take_profit": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.Order": {
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "filled": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "filled_price": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "id": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "side": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dto.Trade"
+            }
+          },
+          "volume": {
+            "$ref": "#/components/schemas/dto.Amount"
+          }
+        }
+      },
+      "dto.Position": {
+        "type": "object",
+        "properties": {
+          "call_price": {
+            "type": "string"
+          },
+          "close_filled_price": {
+            "type": "string"
+          },
+          "close_price": {
+            "type": "string"
+          },
+          "close_reason": {
+            "type": "string"
+          },
+          "closed_at": {
+            "type": "string"
+          },
+          "collateral": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "extend_time": {
+            "type": "integer"
+          },
+          "first_order_filled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "interest": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "is_called": {
+            "type": "boolean"
+          },
+          "liquidity_price": {
+            "type": "string"
+          },
+          "loan": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "market": {
+            "type": "string"
+          },
+          "max_age": {
+            "type": "integer"
+          },
+          "open_filled_price": {
+            "type": "string"
+          },
+          "open_price": {
+            "type": "string"
+          },
+          "opened_at": {
+            "type": "string"
+          },
+          "profit": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "profit_percentage": {
+            "type": "string"
+          },
+          "risk_coef": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "stop_loss": {
+            "type": "string"
+          },
+          "take_profit": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "dto.PositionsRatioResponse": {
+        "type": "object",
+        "properties": {
+          "long_percents": {
+            "type": "integer"
+          },
+          "short_percents": {
+            "type": "integer"
+          }
+        }
+      },
+      "dto.Trade": {
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "price": {
+            "$ref": "#/components/schemas/dto.Amount"
+          },
+          "volume": {
+            "$ref": "#/components/schemas/dto.Amount"
+          }
+        }
+      },
+      "dto.UpdateSLTPRequest": {
+        "type": "object",
+        "properties": {
+          "stop_loss": {
+            "type": "string"
+          },
+          "take_profit": {
+            "type": "string"
+          }
+        }
+      },
+      "settings.LevelSettings": {
+        "type": "object",
+        "properties": {
+          "loss_percentage": {
+            "type": "integer"
+          },
+          "profit_percentage": {
+            "type": "integer"
+          }
+        }
+      },
+      "settings.LevelsDetail": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "max_loan_volume": {
+            "type": "number"
+          },
+          "max_position_volume": {
+            "type": "number"
+          },
+          "max_risk_coefficient": {
+            "type": "number"
+          },
+          "min_trade_volume": {
+            "type": "number"
+          },
+          "quote": {
+            "type": "string"
+          }
+        }
+      },
+      "settings.RiskLevels": {
+        "type": "object",
+        "properties": {
+          "high": {
+            "$ref": "#/components/schemas/settings.LevelSettings"
+          },
+          "low": {
+            "$ref": "#/components/schemas/settings.LevelSettings"
+          },
+          "medium": {
+            "$ref": "#/components/schemas/settings.LevelSettings"
+          }
+        }
+      },
+      "settings.UserLevels": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/settings.LevelsDetail"
+        }
+      }
+    }
+  }
+}

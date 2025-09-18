@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TradeBot Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+  <h1>TradeBot Dashboard / داشبورد تریدبات</h1>
+      <div class="controls">
+        <select id="mode">
+          <option value="paper" selected>paper</option>
+          <option value="live">live</option>
+        </select>
+        <input id="symbol" placeholder="Symbol (e.g., BTC-IRT)" style="width: 150px;" />
+        <input id="budget" type="number" placeholder="Budget (quote)" style="width: 150px;" />
+        <input id="interval" type="number" placeholder="Interval (sec)" style="width: 130px;" />
+  <button id="startBtn">شروع</button>
+  <button id="stopBtn">توقف</button>
+  <button id="checkLiveBtn" title="Check Wallex balances with your API keys">بررسی موجودی لایو</button>
+  <span id="status">وضعیت: متوقف</span>
+      </div>
+      <div class="charts">
+        <div>
+          <h3>قیمت</h3>
+          <canvas id="priceChart" height="120"></canvas>
+        </div>
+        <div>
+          <h3>ارزش کل (بر حسب ارز مظنه)</h3>
+          <canvas id="equityChart" height="120"></canvas>
+        </div>
+      </div>
+      <div>
+  <div id="liveBalance" class="balance"></div>
+  <h3>پیام‌ها</h3>
+  <div id="events" class="events"></div>
+  <h3>معاملات اخیر</h3>
+        <table id="trades">
+          <thead>
+            <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+  </html>
