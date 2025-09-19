@@ -17,6 +17,21 @@ from application.strategies import (
     MultiTimeframeStrategy
 )
 
+# Import ML and news-based strategies
+try:
+    from application.ml_strategies import DeepLearningStrategy, EnsembleMLStrategy
+    ML_AVAILABLE = True
+except ImportError:
+    logger.warning("ML strategies not available. Install tensorflow and scikit-learn for full functionality.")
+    ML_AVAILABLE = False
+
+try:
+    from application.news_trading import NewsReactionStrategy, SentimentMomentumStrategy, MarketRegimeNewsStrategy
+    NEWS_AVAILABLE = True
+except ImportError:
+    logger.warning("News trading strategies not available.")
+    NEWS_AVAILABLE = False
+
 
 class StrategyFactory:
     """Factory for creating trading strategies with various configurations"""
@@ -133,6 +148,39 @@ class StrategyFactory:
                 rsi_period=params.get("rsi_period", 14)
             )
             
+        elif strategy_name == "deep_learning" and ML_AVAILABLE:
+            return DeepLearningStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                confidence_threshold=params.get("confidence_threshold", 0.6),
+                strength_threshold=params.get("strength_threshold", 0.3),
+                auto_train=params.get("auto_train", True)
+            )
+            
+        elif strategy_name == "ensemble_ml" and ML_AVAILABLE:
+            return EnsembleMLStrategy(
+                symbol=params.get("symbol", "BTC-TMN")
+            )
+            
+        elif strategy_name == "news_reaction" and NEWS_AVAILABLE:
+            return NewsReactionStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                market=params.get("market"),  # MarketDataPort instance
+                memory=params.get("memory"),  # TradingMemory instance
+                reaction_speed=params.get("reaction_speed", "fast")
+            )
+            
+        elif strategy_name == "sentiment_momentum" and NEWS_AVAILABLE:
+            return SentimentMomentumStrategy(
+                symbol=params.get("symbol", "BTC-TMN")
+            )
+            
+        elif strategy_name == "market_regime_news" and NEWS_AVAILABLE:
+            return MarketRegimeNewsStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                market=params.get("market"),  # MarketDataPort instance
+                memory=params.get("memory")   # TradingMemory instance
+            )
+            
         else:
             logger.warning("Unknown strategy name: {name}, falling back to RSI+MA", name=strategy_name)
             return RSIMAStrategy()
@@ -140,7 +188,7 @@ class StrategyFactory:
     @staticmethod
     def get_available_strategies() -> List[Dict[str, Any]]:
         """Get list of available strategies with their descriptions"""
-        return [
+        strategies = [
             {
                 "name": "rsi_ma",
                 "description": "RSI + Moving Average strategy with trend following",
@@ -192,6 +240,43 @@ class StrategyFactory:
                 "parameters": ["short_ma", "long_ma", "trend_period", "rsi_period"]
             }
         ]
+        
+        # Add ML strategies if available
+        if ML_AVAILABLE:
+            strategies.extend([
+                {
+                    "name": "deep_learning",
+                    "description": "LSTM Deep Learning price prediction with auto-training",
+                    "parameters": ["symbol", "confidence_threshold", "strength_threshold", "auto_train"]
+                },
+                {
+                    "name": "ensemble_ml",
+                    "description": "Ensemble combining ML predictions with technical analysis",
+                    "parameters": ["symbol"]
+                }
+            ])
+        
+        # Add news trading strategies if available
+        if NEWS_AVAILABLE:
+            strategies.extend([
+                {
+                    "name": "news_reaction",
+                    "description": "Automated news-based trading with real-time sentiment",
+                    "parameters": ["symbol", "market", "memory", "reaction_speed"]
+                },
+                {
+                    "name": "sentiment_momentum",
+                    "description": "Combines sentiment analysis with price momentum",
+                    "parameters": ["symbol"]
+                },
+                {
+                    "name": "market_regime_news",
+                    "description": "Adapts news trading based on market regime detection",
+                    "parameters": ["symbol", "market", "memory"]
+                }
+            ])
+        
+        return strategies
         
     @staticmethod
     def get_strategy_info(strategy_name: str) -> Dict[str, Any]:
