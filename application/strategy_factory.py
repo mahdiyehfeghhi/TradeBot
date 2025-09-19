@@ -10,8 +10,27 @@ from application.strategies import (
     MeanReversionStrategy, 
     EnsembleStrategy,
     TopPerformerStrategy,
-    AdaptiveStrategy
+    AdaptiveStrategy,
+    GridTradingStrategy,
+    DCAStrategy,
+    ArbitrageStrategy,
+    MultiTimeframeStrategy
 )
+
+# Import ML and news-based strategies
+try:
+    from application.ml_strategies import DeepLearningStrategy, EnsembleMLStrategy
+    ML_AVAILABLE = True
+except ImportError:
+    logger.warning("ML strategies not available. Install tensorflow and scikit-learn for full functionality.")
+    ML_AVAILABLE = False
+
+try:
+    from application.news_trading import NewsReactionStrategy, SentimentMomentumStrategy, MarketRegimeNewsStrategy
+    NEWS_AVAILABLE = True
+except ImportError:
+    logger.warning("News trading strategies not available.")
+    NEWS_AVAILABLE = False
 
 
 class StrategyFactory:
@@ -89,11 +108,77 @@ class StrategyFactory:
                 RSIMAStrategy(),
                 BreakoutStrategy(),
                 TopPerformerStrategy(),
-                MeanReversionStrategy()
+                MeanReversionStrategy(),
+                GridTradingStrategy(),
+                DCAStrategy(),
+                MultiTimeframeStrategy()
             ]
             return AdaptiveStrategy(
                 strategies=strategies,
                 performance_window=params.get("performance_window", 100)
+            )
+            
+        elif strategy_name == "grid":
+            return GridTradingStrategy(
+                grid_size=params.get("grid_size", 0.02),
+                grid_levels=params.get("grid_levels", 5),
+                range_detection_period=params.get("range_detection_period", 50)
+            )
+            
+        elif strategy_name == "dca":
+            return DCAStrategy(
+                dca_interval_candles=params.get("dca_interval_candles", 24),
+                volatility_threshold=params.get("volatility_threshold", 0.05),
+                rsi_period=params.get("rsi_period", 14),
+                buy_rsi_threshold=params.get("buy_rsi_threshold", 50)
+            )
+            
+        elif strategy_name == "arbitrage":
+            return ArbitrageStrategy(
+                correlation_threshold=params.get("correlation_threshold", 0.8),
+                spread_threshold=params.get("spread_threshold", 0.02),
+                lookback_period=params.get("lookback_period", 100)
+            )
+            
+        elif strategy_name == "multi_timeframe":
+            return MultiTimeframeStrategy(
+                short_ma=params.get("short_ma", 9),
+                long_ma=params.get("long_ma", 21),
+                trend_period=params.get("trend_period", 50),
+                rsi_period=params.get("rsi_period", 14)
+            )
+            
+        elif strategy_name == "deep_learning" and ML_AVAILABLE:
+            return DeepLearningStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                confidence_threshold=params.get("confidence_threshold", 0.6),
+                strength_threshold=params.get("strength_threshold", 0.3),
+                auto_train=params.get("auto_train", True)
+            )
+            
+        elif strategy_name == "ensemble_ml" and ML_AVAILABLE:
+            return EnsembleMLStrategy(
+                symbol=params.get("symbol", "BTC-TMN")
+            )
+            
+        elif strategy_name == "news_reaction" and NEWS_AVAILABLE:
+            return NewsReactionStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                market=params.get("market"),  # MarketDataPort instance
+                memory=params.get("memory"),  # TradingMemory instance
+                reaction_speed=params.get("reaction_speed", "fast")
+            )
+            
+        elif strategy_name == "sentiment_momentum" and NEWS_AVAILABLE:
+            return SentimentMomentumStrategy(
+                symbol=params.get("symbol", "BTC-TMN")
+            )
+            
+        elif strategy_name == "market_regime_news" and NEWS_AVAILABLE:
+            return MarketRegimeNewsStrategy(
+                symbol=params.get("symbol", "BTC-TMN"),
+                market=params.get("market"),  # MarketDataPort instance
+                memory=params.get("memory")   # TradingMemory instance
             )
             
         else:
@@ -103,7 +188,7 @@ class StrategyFactory:
     @staticmethod
     def get_available_strategies() -> List[Dict[str, Any]]:
         """Get list of available strategies with their descriptions"""
-        return [
+        strategies = [
             {
                 "name": "rsi_ma",
                 "description": "RSI + Moving Average strategy with trend following",
@@ -133,8 +218,65 @@ class StrategyFactory:
                 "name": "adaptive",
                 "description": "Adaptive strategy selection based on performance",
                 "parameters": ["performance_window"]
+            },
+            {
+                "name": "grid",
+                "description": "Grid trading for ranging markets with dynamic levels",
+                "parameters": ["grid_size", "grid_levels", "range_detection_period"]
+            },
+            {
+                "name": "dca",
+                "description": "Smart Dollar Cost Averaging with volatility timing",
+                "parameters": ["dca_interval_candles", "volatility_threshold", "rsi_period", "buy_rsi_threshold"]
+            },
+            {
+                "name": "arbitrage", 
+                "description": "Statistical arbitrage based on price deviations",
+                "parameters": ["correlation_threshold", "spread_threshold", "lookback_period"]
+            },
+            {
+                "name": "multi_timeframe",
+                "description": "Multi-timeframe analysis with weighted signals",
+                "parameters": ["short_ma", "long_ma", "trend_period", "rsi_period"]
             }
         ]
+        
+        # Add ML strategies if available
+        if ML_AVAILABLE:
+            strategies.extend([
+                {
+                    "name": "deep_learning",
+                    "description": "LSTM Deep Learning price prediction with auto-training",
+                    "parameters": ["symbol", "confidence_threshold", "strength_threshold", "auto_train"]
+                },
+                {
+                    "name": "ensemble_ml",
+                    "description": "Ensemble combining ML predictions with technical analysis",
+                    "parameters": ["symbol"]
+                }
+            ])
+        
+        # Add news trading strategies if available
+        if NEWS_AVAILABLE:
+            strategies.extend([
+                {
+                    "name": "news_reaction",
+                    "description": "Automated news-based trading with real-time sentiment",
+                    "parameters": ["symbol", "market", "memory", "reaction_speed"]
+                },
+                {
+                    "name": "sentiment_momentum",
+                    "description": "Combines sentiment analysis with price momentum",
+                    "parameters": ["symbol"]
+                },
+                {
+                    "name": "market_regime_news",
+                    "description": "Adapts news trading based on market regime detection",
+                    "parameters": ["symbol", "market", "memory"]
+                }
+            ])
+        
+        return strategies
         
     @staticmethod
     def get_strategy_info(strategy_name: str) -> Dict[str, Any]:
