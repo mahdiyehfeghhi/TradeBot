@@ -10,7 +10,11 @@ from application.strategies import (
     MeanReversionStrategy, 
     EnsembleStrategy,
     TopPerformerStrategy,
-    AdaptiveStrategy
+    AdaptiveStrategy,
+    GridTradingStrategy,
+    DCAStrategy,
+    ArbitrageStrategy,
+    MultiTimeframeStrategy
 )
 
 
@@ -89,11 +93,44 @@ class StrategyFactory:
                 RSIMAStrategy(),
                 BreakoutStrategy(),
                 TopPerformerStrategy(),
-                MeanReversionStrategy()
+                MeanReversionStrategy(),
+                GridTradingStrategy(),
+                DCAStrategy(),
+                MultiTimeframeStrategy()
             ]
             return AdaptiveStrategy(
                 strategies=strategies,
                 performance_window=params.get("performance_window", 100)
+            )
+            
+        elif strategy_name == "grid":
+            return GridTradingStrategy(
+                grid_size=params.get("grid_size", 0.02),
+                grid_levels=params.get("grid_levels", 5),
+                range_detection_period=params.get("range_detection_period", 50)
+            )
+            
+        elif strategy_name == "dca":
+            return DCAStrategy(
+                dca_interval_candles=params.get("dca_interval_candles", 24),
+                volatility_threshold=params.get("volatility_threshold", 0.05),
+                rsi_period=params.get("rsi_period", 14),
+                buy_rsi_threshold=params.get("buy_rsi_threshold", 50)
+            )
+            
+        elif strategy_name == "arbitrage":
+            return ArbitrageStrategy(
+                correlation_threshold=params.get("correlation_threshold", 0.8),
+                spread_threshold=params.get("spread_threshold", 0.02),
+                lookback_period=params.get("lookback_period", 100)
+            )
+            
+        elif strategy_name == "multi_timeframe":
+            return MultiTimeframeStrategy(
+                short_ma=params.get("short_ma", 9),
+                long_ma=params.get("long_ma", 21),
+                trend_period=params.get("trend_period", 50),
+                rsi_period=params.get("rsi_period", 14)
             )
             
         else:
@@ -133,6 +170,26 @@ class StrategyFactory:
                 "name": "adaptive",
                 "description": "Adaptive strategy selection based on performance",
                 "parameters": ["performance_window"]
+            },
+            {
+                "name": "grid",
+                "description": "Grid trading for ranging markets with dynamic levels",
+                "parameters": ["grid_size", "grid_levels", "range_detection_period"]
+            },
+            {
+                "name": "dca",
+                "description": "Smart Dollar Cost Averaging with volatility timing",
+                "parameters": ["dca_interval_candles", "volatility_threshold", "rsi_period", "buy_rsi_threshold"]
+            },
+            {
+                "name": "arbitrage", 
+                "description": "Statistical arbitrage based on price deviations",
+                "parameters": ["correlation_threshold", "spread_threshold", "lookback_period"]
+            },
+            {
+                "name": "multi_timeframe",
+                "description": "Multi-timeframe analysis with weighted signals",
+                "parameters": ["short_ma", "long_ma", "trend_period", "rsi_period"]
             }
         ]
         

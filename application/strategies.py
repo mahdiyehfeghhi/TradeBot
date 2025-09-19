@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from typing import Iterable, List, Dict
 import time
 from datetime import datetime, timedelta
 
@@ -391,3 +391,287 @@ class AdaptiveStrategy(Strategy):
             self._decision_history = self._decision_history[-self.performance_window:]
             
         return decision
+
+
+class GridTradingStrategy(Strategy):
+    """
+    Grid trading strategy for ranging markets.
+    Places buy/sell orders at fixed intervals to profit from price oscillations.
+    """
+    
+    def __init__(self, grid_size: float = 0.02, grid_levels: int = 5, 
+                 range_detection_period: int = 50):
+        self.grid_size = grid_size  # 2% grid spacing
+        self.grid_levels = grid_levels
+        self.range_detection_period = range_detection_period
+        self.last_action = "hold"
+        self.entry_price = None
+        
+    def _detect_ranging_market(self, candles: List[Candle]) -> bool:
+        """Detect if market is in a ranging condition"""
+        if len(candles) < self.range_detection_period:
+            return False
+            
+        prices = [c.close for c in candles[-self.range_detection_period:]]
+        price_range = (max(prices) - min(prices)) / min(prices)
+        
+        # Consider ranging if price movement is less than 10%
+        return price_range < 0.10
+    
+    def on_candles(self, candles: Iterable[Candle], price: float) -> TradeDecision:
+        candle_list = list(candles)
+        if len(candle_list) < self.range_detection_period:
+            return TradeDecision(action="hold", reason="insufficient-data", size_quote=0)
+        
+        if not self._detect_ranging_market(candle_list):
+            return TradeDecision(action="hold", reason="trending-market", size_quote=0)
+        
+        # Calculate grid levels
+        recent_high = max(c.high for c in candle_list[-20:])
+        recent_low = min(c.low for c in candle_list[-20:])
+        mid_price = (recent_high + recent_low) / 2
+        
+        if self.entry_price is None:
+            self.entry_price = price
+        
+        price_change = (price - self.entry_price) / self.entry_price
+        
+        # Grid logic
+        if price_change <= -self.grid_size and self.last_action != "buy":
+            self.last_action = "buy"
+            self.entry_price = price
+            return TradeDecision(
+                action="buy", 
+                reason=f"grid-buy at {price_change:.2%} below last entry",
+                size_quote=0,
+                stop_loss=price * 0.95
+            )
+        elif price_change >= self.grid_size and self.last_action != "sell":
+            self.last_action = "sell"
+            self.entry_price = price
+            return TradeDecision(
+                action="sell",
+                reason=f"grid-sell at {price_change:.2%} above last entry", 
+                size_quote=0,
+                stop_loss=price * 1.05
+            )
+        
+        return TradeDecision(action="hold", reason="within-grid", size_quote=0)
+
+
+class DCAStrategy(Strategy):
+    """
+    Smart Dollar Cost Averaging strategy that adjusts timing based on market conditions.
+    """
+    
+    def __init__(self, dca_interval_candles: int = 24, volatility_threshold: float = 0.05,
+                 rsi_period: int = 14, buy_rsi_threshold: int = 50):
+        self.dca_interval = dca_interval_candles
+        self.volatility_threshold = volatility_threshold
+        self.rsi_period = rsi_period
+        self.buy_rsi_threshold = buy_rsi_threshold
+        self.last_buy_candle = 0
+        
+    def _calculate_volatility(self, candles: List[Candle], period: int = 20) -> float:
+        """Calculate price volatility"""
+        if len(candles) < period:
+            return 0.0
+        
+        prices = [c.close for c in candles[-period:]]
+        returns = [prices[i]/prices[i-1] - 1 for i in range(1, len(prices))]
+        return np.std(returns) if returns else 0.0
+    
+    def _rsi(self, series: pd.Series, period: int) -> pd.Series:
+        """Calculate RSI"""
+        delta = series.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
+        rs = gain / (loss.replace(0, np.nan))
+        rsi = 100 - (100 / (1 + rs))
+        return rsi.fillna(50)
+    
+    def on_candles(self, candles: Iterable[Candle], price: float) -> TradeDecision:
+        candle_list = list(candles)
+        if len(candle_list) < max(self.rsi_period, 20):
+            return TradeDecision(action="hold", reason="insufficient-data", size_quote=0)
+        
+        # Calculate indicators
+        volatility = self._calculate_volatility(candle_list)
+        df = pd.DataFrame([{"close": c.close} for c in candle_list])
+        rsi = self._rsi(df["close"], self.rsi_period).iloc[-1]
+        
+        current_candle = len(candle_list)
+        candles_since_last_buy = current_candle - self.last_buy_candle
+        
+        # Smart DCA conditions
+        conditions = [
+            candles_since_last_buy >= self.dca_interval,  # Time-based
+            rsi < self.buy_rsi_threshold,  # Oversold condition
+            volatility > self.volatility_threshold  # High volatility (opportunity)
+        ]
+        
+        if all(conditions):
+            self.last_buy_candle = current_candle
+            return TradeDecision(
+                action="buy",
+                reason=f"smart-dca: RSI={rsi:.1f}, vol={volatility:.3f}, interval={candles_since_last_buy}",
+                size_quote=0,
+                stop_loss=price * 0.90
+            )
+        
+        return TradeDecision(
+            action="hold", 
+            reason=f"waiting-dca: RSI={rsi:.1f}, vol={volatility:.3f}, interval={candles_since_last_buy}",
+            size_quote=0
+        )
+
+
+class ArbitrageStrategy(Strategy):
+    """
+    Statistical arbitrage strategy that identifies price discrepancies.
+    """
+    
+    def __init__(self, correlation_threshold: float = 0.8, 
+                 spread_threshold: float = 0.02, lookback_period: int = 100):
+        self.correlation_threshold = correlation_threshold
+        self.spread_threshold = spread_threshold
+        self.lookback_period = lookback_period
+        self.price_history = []
+        
+    def on_candles(self, candles: Iterable[Candle], price: float) -> TradeDecision:
+        candle_list = list(candles)
+        if len(candle_list) < self.lookback_period:
+            return TradeDecision(action="hold", reason="insufficient-data", size_quote=0)
+        
+        # Store price history for analysis
+        self.price_history.append(price)
+        if len(self.price_history) > self.lookback_period:
+            self.price_history.pop(0)
+        
+        # Calculate moving average and deviation
+        ma = np.mean(self.price_history)
+        std = np.std(self.price_history)
+        z_score = (price - ma) / std if std > 0 else 0
+        
+        # Arbitrage signals based on statistical deviation
+        if z_score < -2:  # Significantly undervalued
+            return TradeDecision(
+                action="buy",
+                reason=f"statistical-arbitrage: z-score={z_score:.2f} (undervalued)",
+                size_quote=0,
+                stop_loss=price * 0.95,
+                take_profit=ma
+            )
+        elif z_score > 2:  # Significantly overvalued
+            return TradeDecision(
+                action="sell",
+                reason=f"statistical-arbitrage: z-score={z_score:.2f} (overvalued)",
+                size_quote=0,
+                stop_loss=price * 1.05,
+                take_profit=ma
+            )
+        
+        return TradeDecision(
+            action="hold",
+            reason=f"z-score={z_score:.2f} within normal range",
+            size_quote=0
+        )
+
+
+class MultiTimeframeStrategy(Strategy):
+    """
+    Multi-timeframe analysis strategy that combines signals from different timeframes.
+    """
+    
+    def __init__(self, short_ma: int = 9, long_ma: int = 21, 
+                 trend_period: int = 50, rsi_period: int = 14):
+        self.short_ma = short_ma
+        self.long_ma = long_ma
+        self.trend_period = trend_period
+        self.rsi_period = rsi_period
+        
+    def _analyze_timeframe(self, candles: List[Candle], period_factor: int = 1) -> Dict:
+        """Analyze a specific timeframe"""
+        # Sample candles for higher timeframe analysis
+        sampled_candles = candles[::period_factor] if period_factor > 1 else candles
+        
+        if len(sampled_candles) < max(self.long_ma, self.trend_period):
+            return {"trend": "unknown", "signal": "hold", "strength": 0}
+        
+        df = pd.DataFrame([{"close": c.close} for c in sampled_candles])
+        
+        # Calculate indicators
+        df["ma_short"] = df["close"].rolling(self.short_ma).mean()
+        df["ma_long"] = df["close"].rolling(self.long_ma).mean()
+        df["ma_trend"] = df["close"].rolling(self.trend_period).mean()
+        
+        last = df.iloc[-1]
+        prev = df.iloc[-2] if len(df) > 1 else last
+        
+        # Determine trend
+        if last["close"] > last["ma_trend"]:
+            trend = "up"
+        elif last["close"] < last["ma_trend"]:
+            trend = "down"
+        else:
+            trend = "sideways"
+        
+        # Generate signal
+        if last["ma_short"] > last["ma_long"] and prev["ma_short"] <= prev["ma_long"]:
+            signal = "buy"
+            strength = 2
+        elif last["ma_short"] < last["ma_long"] and prev["ma_short"] >= prev["ma_long"]:
+            signal = "sell"
+            strength = 2
+        elif last["ma_short"] > last["ma_long"]:
+            signal = "buy"
+            strength = 1
+        elif last["ma_short"] < last["ma_long"]:
+            signal = "sell"
+            strength = 1
+        else:
+            signal = "hold"
+            strength = 0
+            
+        return {"trend": trend, "signal": signal, "strength": strength}
+    
+    def on_candles(self, candles: Iterable[Candle], price: float) -> TradeDecision:
+        candle_list = list(candles)
+        if len(candle_list) < self.trend_period * 3:
+            return TradeDecision(action="hold", reason="insufficient-data", size_quote=0)
+        
+        # Analyze multiple timeframes
+        tf1 = self._analyze_timeframe(candle_list, 1)    # 1x (base timeframe)
+        tf2 = self._analyze_timeframe(candle_list, 3)    # 3x (higher timeframe)
+        tf3 = self._analyze_timeframe(candle_list, 9)    # 9x (longer timeframe)
+        
+        # Combine signals with weights
+        signal_score = (
+            tf1["strength"] * (1 if tf1["signal"] == "buy" else -1 if tf1["signal"] == "sell" else 0) * 1.0 +
+            tf2["strength"] * (1 if tf2["signal"] == "buy" else -1 if tf2["signal"] == "sell" else 0) * 1.5 +
+            tf3["strength"] * (1 if tf3["signal"] == "buy" else -1 if tf3["signal"] == "sell" else 0) * 2.0
+        )
+        
+        reason = f"MTF: 1x={tf1['signal']}({tf1['strength']}), 3x={tf2['signal']}({tf2['strength']}), 9x={tf3['signal']}({tf3['strength']})"
+        
+        # Decision logic
+        if signal_score >= 3:
+            return TradeDecision(
+                action="buy",
+                reason=f"{reason}, score={signal_score:.1f}",
+                size_quote=0,
+                stop_loss=price * 0.95
+            )
+        elif signal_score <= -3:
+            return TradeDecision(
+                action="sell",
+                reason=f"{reason}, score={signal_score:.1f}",
+                size_quote=0,
+                stop_loss=price * 1.05
+            )
+        
+        return TradeDecision(
+            action="hold",
+            reason=f"{reason}, score={signal_score:.1f} (neutral)",
+            size_quote=0
+        )
