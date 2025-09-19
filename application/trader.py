@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from loguru import logger
+import time
 
-from domain.models import Order, OrderSide
+from domain.models import Order, OrderSide, TradingEvent
 from domain.ports import MarketDataPort, TradingPort, Strategy, RiskManager
+from application.memory import TradingMemory
 
 
 @dataclass
@@ -21,12 +23,15 @@ class TraderContext:
 
 
 class Trader:
-    def __init__(self, market: MarketDataPort, broker: TradingPort, strategy: Strategy, risk: RiskManager, ctx: TraderContext):
+    def __init__(self, market: MarketDataPort, broker: TradingPort, strategy: Strategy, 
+                 risk: RiskManager, ctx: TraderContext, memory: TradingMemory = None):
         self.market = market
         self.broker = broker
         self.strategy = strategy
         self.risk = risk
         self.ctx = ctx
+        self.memory = memory or TradingMemory()
+        self._open_positions = {}  # Track open positions for learning
 
     async def run_once(self, budget_quote: float | None = None):
         """Perform a single trading iteration and return telemetry for UI.
@@ -43,13 +48,22 @@ class Trader:
             ticker = await self.market.get_ticker(self.ctx.symbol)
             price = ticker.price
             logger.info("Ticker price for {sym}: {price}", sym=self.ctx.symbol, price=price)
+            
+            # Check for position exits before making new decisions
+            self._check_position_exits(price)
 
             decision = self.strategy.on_candles(candles, price)
             logger.info("Decision: action={a} reason={r} stop={s}", a=decision.action, r=getattr(decision, "reason", None), s=getattr(decision, "stop_loss", None))
+            
+            # Store market conditions for learning
+            candles_list = list(candles)
+            market_conditions = self._extract_market_conditions(candles_list, price)
+            
             meta.update({
                 "action": decision.action,
                 "reason": getattr(decision, "reason", None),
                 "stop": getattr(decision, "stop_loss", None),
+                "market_conditions": market_conditions,
             })
 
             # Determine equity in quote currency combining base+quote
@@ -138,10 +152,37 @@ class Trader:
                 logger.info("Placing order: {side} {qty} {base} @ ~{price} {quote} (notional ~{notional})", side=side.value, qty=qty_base, base=base_cur, price=price, quote=self.ctx.quote_currency, notional=round(qty_base*price, 2))
                 report = await self.broker.place_order(order)
                 logger.info("Order executed: {r}", r=report)
+                
+                # Store trading event for learning
+                if report and report.status in ["filled", "partial"]:
+                    trading_event = TradingEvent(
+                        timestamp=int(time.time()),
+                        symbol=self.ctx.symbol,
+                        action=decision.action,
+                        reason=decision.reason,
+                        entry_price=report.avg_price,
+                        quantity=report.executed_qty,
+                        market_conditions=market_conditions,
+                        strategy_used=type(self.strategy).__name__
+                    )
+                    event_id = self.memory.store_trading_event(trading_event)
+                    
+                    # Track open position for later PnL calculation
+                    self._open_positions[self.ctx.symbol] = {
+                        "event_id": event_id,
+                        "entry_price": report.avg_price,
+                        "quantity": report.executed_qty,
+                        "side": side.value,
+                        "timestamp": int(time.time()),
+                        "stop_loss": decision.stop_loss,
+                        "take_profit": decision.take_profit
+                    }
+                    
                 meta.update({
                     "placed": True,
                     "side": side.value,
                     "qty_base": qty_base,
+                    "event_stored": report and report.status in ["filled", "partial"]
                 })
             else:
                 if price <= 0:
@@ -154,6 +195,107 @@ class Trader:
             logger.exception("Trader iteration error: {e}")
 
         return {"price": price, "equity_quote": equity_quote, "report": report, "meta": meta}
+    
+    def _extract_market_conditions(self, candles: list, current_price: float) -> dict:
+        """Extract market conditions for learning purposes"""
+        if len(candles) < 20:
+            return {}
+            
+        import pandas as pd
+        import numpy as np
+        
+        df = pd.DataFrame([{
+            "close": c.close,
+            "volume": c.volume,
+            "high": c.high,
+            "low": c.low
+        } for c in candles])
+        
+        try:
+            # Calculate basic indicators
+            sma_20 = df["close"].rolling(20).mean().iloc[-1] if len(df) >= 20 else current_price
+            volatility = df["close"].pct_change().rolling(10).std().iloc[-1] * 100
+            
+            # RSI calculation
+            delta = df["close"].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs = gain / (loss.replace(0, np.nan))
+            rsi = (100 - (100 / (1 + rs))).iloc[-1] if len(df) >= 14 else 50
+            
+            # Volume analysis
+            avg_volume = df["volume"].rolling(20).mean().iloc[-1]
+            current_volume = df["volume"].iloc[-1]
+            volume_ratio = current_volume / avg_volume if avg_volume > 0 else 1.0
+            
+            # Price position
+            high_20 = df["high"].rolling(20).max().iloc[-1]
+            low_20 = df["low"].rolling(20).min().iloc[-1]
+            price_position = (current_price - low_20) / (high_20 - low_20) if high_20 > low_20 else 0.5
+            
+            return {
+                "sma_20": float(sma_20),
+                "volatility": float(volatility),
+                "rsi": float(rsi),
+                "volume_ratio": float(volume_ratio),
+                "price_position": float(price_position),
+                "trend": "bullish" if current_price > sma_20 else "bearish"
+            }
+        except Exception as e:
+            logger.warning("Failed to extract market conditions: {err}", err=e)
+            return {}
+    
+    def _check_position_exits(self, current_price: float):
+        """Check if any open positions should be closed and update learning data"""
+        if self.ctx.symbol not in self._open_positions:
+            return
+            
+        position = self._open_positions[self.ctx.symbol]
+        entry_price = position["entry_price"]
+        quantity = position["quantity"]
+        side = position["side"]
+        event_id = position["event_id"]
+        
+        # Calculate current PnL
+        if side == "buy":
+            pnl = (current_price - entry_price) * quantity
+        else:  # sell
+            pnl = (entry_price - current_price) * quantity
+            
+        # Check stop loss and take profit
+        should_exit = False
+        exit_reason = ""
+        
+        if position.get("stop_loss") and side == "buy" and current_price <= position["stop_loss"]:
+            should_exit = True
+            exit_reason = "stop_loss"
+        elif position.get("stop_loss") and side == "sell" and current_price >= position["stop_loss"]:
+            should_exit = True
+            exit_reason = "stop_loss"
+        elif position.get("take_profit") and side == "buy" and current_price >= position["take_profit"]:
+            should_exit = True
+            exit_reason = "take_profit"
+        elif position.get("take_profit") and side == "sell" and current_price <= position["take_profit"]:
+            should_exit = True
+            exit_reason = "take_profit"
+            
+        # Update learning data (even if not exiting, for ongoing tracking)
+        duration_minutes = (int(time.time()) - position["timestamp"]) // 60
+        outcome = "win" if pnl > 0 else ("loss" if pnl < 0 else "breakeven")
+        
+        try:
+            self.memory.update_trading_event(event_id, 
+                                           exit_price=current_price,
+                                           pnl=pnl,
+                                           duration_minutes=duration_minutes,
+                                           outcome=outcome)
+        except Exception as e:
+            logger.warning("Failed to update trading event: {err}", err=e)
+            
+        # If position should be closed, remove from tracking
+        if should_exit:
+            logger.info("Position exit triggered: {reason} PnL: {pnl}", reason=exit_reason, pnl=pnl)
+            del self._open_positions[self.ctx.symbol]
 
     async def run(self, budget_quote: float | None = None):
         logger.info("Starting trader loop for {symbol}", symbol=self.ctx.symbol)

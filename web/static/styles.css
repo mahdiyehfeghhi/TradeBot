@@ -1,11 +1,167 @@
 body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 16px; }
 h1 { margin-top: 0; }
-.controls { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.controls { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 button { background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 button#stopBtn { background: #ef4444; }
+button:hover { opacity: 0.8; }
 .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border-bottom: 1px solid #1f2937; padding: 6px 8px; text-align: left; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+th, td { border-bottom: 1px solid #1f2937; padding: 6px 8px; text-align: left; font-size: 14px; }
 thead { background: #111827; }
 .balance { margin: 8px 0 12px; color: #a7f3d0; }
+
+/* Enhanced sections */
+.market-section, .strategy-section, .learning-section {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #334155;
+}
+
+.market-section h3, .strategy-section h3, .learning-section h3 {
+  margin-top: 0;
+  color: #60a5fa;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 8px;
+}
+
+.market-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.market-card {
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.market-card.positive { border-left: 4px solid #10b981; }
+.market-card.negative { border-left: 4px solid #ef4444; }
+
+.market-card .symbol {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.market-card .change {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.market-card .change.positive { color: #10b981; }
+.market-card .change.negative { color: #ef4444; }
+
+.market-card .price {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.strategy-card {
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.strategy-name {
+  font-weight: bold;
+  color: #60a5fa;
+  margin-bottom: 8px;
+}
+
+.strategy-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.strategy-metrics .metric {
+  display: flex;
+  justify-content: space-between;
+}
+
+.insights-container {
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.insight-section {
+  margin-bottom: 16px;
+}
+
+.insight-section h4 {
+  color: #a78bfa;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #4c1d95;
+  padding-bottom: 4px;
+}
+
+.recommendations {
+  list-style: none;
+  padding: 0;
+}
+
+.recommendations li {
+  background: #1e293b;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.sentiment {
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.sentiment.bullish { background: #065f46; color: #10b981; }
+.sentiment.bearish { background: #7f1d1d; color: #ef4444; }
+.sentiment.neutral { background: #374151; color: #9ca3af; }
+
+.event-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .market-grid, .strategy-grid {
+    grid-template-columns: 1fr;
+  }
+}

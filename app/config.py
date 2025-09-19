@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import yaml
 from pydantic import BaseModel, Field
@@ -31,11 +31,30 @@ class StrategyParams(BaseModel):
     bb_period: int = 20
     bb_std: float = 2.0
     ensemble_threshold: int = 2
+    # Top performer strategy params
+    min_volume_24h: float = 1000000
+    min_price_change: float = 5.0
+    momentum_period: int = 10
+    # Portfolio management
+    max_active_symbols: int = 3
+    performance_update_interval_min: int = 15
 
 
 class StrategyConfig(BaseModel):
     name: str = "rsi_ma"
     params: StrategyParams = StrategyParams()
+
+
+class LearningConfig(BaseModel):
+    enabled: bool = True
+    db_path: str = "data/trading_memory.db"
+
+
+class PortfolioConfig(BaseModel):
+    multi_symbol_trading: bool = False
+    symbols_to_scan: List[str] = ["BTC-TMN", "ETH-TMN", "DOGE-TMN"]
+    intelligent_allocation: bool = True
+    max_active_symbols: int = 3
 
 
 class WallexRateLimit(BaseModel):
@@ -74,6 +93,10 @@ class AppConfig(BaseModel):
 class PortfolioConfig(BaseModel):
     enabled: bool = False
     symbols: list[str] = []
+    multi_symbol_trading: bool = False
+    symbols_to_scan: List[str] = ["BTC-TMN", "ETH-TMN", "DOGE-TMN"]
+    intelligent_allocation: bool = True
+    max_active_symbols: int = 3
     allocation: str = Field("equal", pattern=r"^(equal|volatility|risk-parity)$")
     # Automatic symbol selection
     selection: str = Field("manual", pattern=r"^(manual|auto)$")
@@ -100,6 +123,7 @@ class Config(BaseModel):
     symbols: dict[str, SymbolConfig]
     strategy: StrategyConfig
     portfolio: PortfolioConfig | None = None
+    learning: LearningConfig | None = None
 
     @staticmethod
     def load(path: Path) -> "Config":

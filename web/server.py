@@ -589,3 +589,197 @@ async def api_place_test_order(symbol: Optional[str] = None, side: str = "buy", 
             await port._close()
         except Exception:
             pass
+
+
+# Enhanced TradeBot API endpoints
+
+@app.get("/api/strategies")
+async def api_get_strategies():
+    """Get list of available trading strategies"""
+    from application.strategy_factory import StrategyFactory
+    return {"ok": True, "strategies": StrategyFactory.get_available_strategies()}
+
+
+@app.get("/api/market-performance")
+async def api_market_performance(symbols: str = "BTC-TMN,ETH-TMN,DOGE-TMN"):
+    """Get 24h market performance for specified symbols"""
+    try:
+        cfg = Config.load(Path("config.yaml"))
+        env = Settings()
+        
+        from application.scanner import MarketScanner
+        from application.memory import TradingMemory
+        from infrastructure.wallex.rest_client import WallexRestClient
+        
+        market = WallexRestClient(
+            cfg.wallex.base_url,
+            env.wallex_api_key,
+            env.wallex_api_secret,
+            env.app_user_agent,
+            cfg.wallex.endpoints,
+            cfg.wallex.symbol_transform,
+            cfg.wallex.candle_resolution,
+        )
+        
+        memory = TradingMemory()
+        scanner = MarketScanner(market, memory)
+        
+        symbol_list = [s.strip() for s in symbols.split(",")]
+        performances = await scanner.scan_symbols(symbol_list)
+        
+        await market.close()
+        
+        return {
+            "ok": True,
+            "performances": [
+                {
+                    "symbol": p.symbol,
+                    "price_change_24h": p.price_change_24h,
+                    "volume_24h": p.volume_24h,
+                    "current_price": p.current_price,
+                    "high_24h": p.high_24h,
+                    "low_24h": p.low_24h,
+                    "timestamp": p.timestamp
+                } for p in performances
+            ],
+            "market_sentiment": scanner.get_market_sentiment(performances)
+        }
+        
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/learning/insights")
+async def api_learning_insights(symbol: Optional[str] = None):
+    """Get learning insights from trading history"""
+    try:
+        from application.memory import TradingMemory
+        memory = TradingMemory()
+        insights = memory.get_learning_insights(symbol)
+        return {"ok": True, "insights": insights}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/learning/events")
+async def api_recent_events(symbol: Optional[str] = None, hours: int = 24):
+    """Get recent trading events"""
+    try:
+        from application.memory import TradingMemory
+        memory = TradingMemory()
+        events = memory.get_recent_events(symbol, hours)
+        
+        return {
+            "ok": True,
+            "events": [
+                {
+                    "timestamp": e.timestamp,
+                    "symbol": e.symbol,
+                    "action": e.action,
+                    "reason": e.reason,
+                    "entry_price": e.entry_price,
+                    "exit_price": e.exit_price,
+                    "pnl": e.pnl,
+                    "outcome": e.outcome,
+                    "strategy_used": e.strategy_used,
+                    "duration_minutes": e.duration_minutes
+                } for e in events
+            ]
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/learning/strategy-performance")
+async def api_strategy_performance():
+    """Get performance metrics for all strategies"""
+    try:
+        from application.memory import TradingMemory
+        memory = TradingMemory()
+        strategies = memory.get_top_performing_strategies(limit=10)
+        
+        return {
+            "ok": True,
+            "strategies": [
+                {
+                    "strategy_name": s.strategy_name,
+                    "total_trades": s.total_trades,
+                    "win_rate": s.win_rate,
+                    "total_pnl": s.total_pnl,
+                    "profit_factor": s.profit_factor,
+                    "avg_win": s.avg_win,
+                    "avg_loss": s.avg_loss,
+                    "last_updated": s.last_updated
+                } for s in strategies
+            ]
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/portfolio/analytics")
+async def api_portfolio_analytics():
+    """Get comprehensive portfolio analytics"""
+    try:
+        cfg = Config.load(Path("config.yaml"))
+        env = Settings()
+        
+        # This is a simplified version - in a full implementation, 
+        # you'd maintain the portfolio engine as part of the bot state
+        from application.memory import TradingMemory
+        from application.scanner import MarketScanner
+        from infrastructure.wallex.rest_client import WallexRestClient
+        
+        market = WallexRestClient(
+            cfg.wallex.base_url,
+            env.wallex_api_key,
+            env.wallex_api_secret,
+            env.app_user_agent,
+            cfg.wallex.endpoints,
+            cfg.wallex.symbol_transform,
+            cfg.wallex.candle_resolution,
+        )
+        
+        memory = TradingMemory()
+        scanner = MarketScanner(market, memory)
+        
+        # Get portfolio config symbols or default
+        symbols = getattr(cfg.portfolio, 'symbols_to_scan', ["BTC-TMN", "ETH-TMN", "DOGE-TMN"]) if cfg.portfolio else ["BTC-TMN"]
+        
+        performances = await scanner.scan_symbols(symbols)
+        sentiment = scanner.get_market_sentiment(performances)
+        insights = memory.get_learning_insights()
+        
+        await market.close()
+        
+        return {
+            "ok": True,
+            "analytics": {
+                "market_sentiment": sentiment,
+                "top_performers": [
+                    {
+                        "symbol": p.symbol,
+                        "change_24h": p.price_change_24h,
+                        "volume_24h": p.volume_24h
+                    } for p in performances[:5]
+                ],
+                "learning_insights": insights,
+                "total_symbols_scanned": len(symbols),
+                "last_updated": datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/api/analyze-pattern")
+async def api_analyze_pattern(symbol: str, hours: int = 168):
+    """Analyze trading patterns for a specific symbol"""
+    try:
+        from application.memory import TradingMemory
+        memory = TradingMemory()
+        analysis = memory.analyze_market_patterns(symbol, hours)
+        return {"ok": True, "analysis": analysis}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
