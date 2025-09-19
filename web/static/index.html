@@ -3,26 +3,48 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TradeBot Dashboard</title>
+    <title>TradeBot Dashboard - Enhanced</title>
     <link rel="stylesheet" href="/static/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
   <body>
     <div class="container">
-  <h1>TradeBot Dashboard / داشبورد تریدبات</h1>
+      <h1>TradeBot Dashboard / داشبورد تریدبات پیشرفته</h1>
+      
+      <!-- Enhanced Controls -->
       <div class="controls">
         <select id="mode">
           <option value="paper" selected>paper</option>
           <option value="live">live</option>
         </select>
-        <input id="symbol" placeholder="Symbol (e.g., BTC-IRT)" style="width: 150px;" />
+        <input id="symbol" placeholder="Symbol (e.g., BTC-TMN)" style="width: 150px;" />
         <input id="budget" type="number" placeholder="Budget (quote)" style="width: 150px;" />
         <input id="interval" type="number" placeholder="Interval (sec)" style="width: 130px;" />
-  <button id="startBtn">شروع</button>
-  <button id="stopBtn">توقف</button>
-  <button id="checkLiveBtn" title="Check Wallex balances with your API keys">بررسی موجودی لایو</button>
-  <span id="status">وضعیت: متوقف</span>
+        <select id="strategy">
+          <option value="rsi_ma">RSI + MA</option>
+          <option value="top_performer" selected>Top Performer</option>
+          <option value="breakout">Breakout</option>
+          <option value="mean_reversion">Mean Reversion</option>
+          <option value="ensemble">Ensemble</option>
+          <option value="adaptive">Adaptive</option>
+        </select>
+        <button id="startBtn">شروع</button>
+        <button id="stopBtn">توقف</button>
+        <button id="checkLiveBtn" title="Check Wallex balances with your API keys">بررسی موجودی لایو</button>
+        <span id="status">وضعیت: متوقف</span>
       </div>
+
+      <!-- New Market Performance Section -->
+      <div class="market-section">
+        <h3>بازار و عملکرد 24 ساعته</h3>
+        <div class="market-controls">
+          <button id="refreshMarketBtn">بروزرسانی بازار</button>
+          <span id="marketSentiment" class="sentiment"></span>
+        </div>
+        <div id="marketPerformance" class="market-grid"></div>
+      </div>
+
+      <!-- Enhanced Charts -->
       <div class="charts">
         <div>
           <h3>قیمت</h3>
@@ -33,14 +55,47 @@
           <canvas id="equityChart" height="120"></canvas>
         </div>
       </div>
+
+      <!-- Strategy Performance Section -->
+      <div class="strategy-section">
+        <h3>عملکرد استراتژی‌ها</h3>
+        <button id="refreshStrategyBtn">بروزرسانی عملکرد</button>
+        <div id="strategyPerformance" class="strategy-grid"></div>
+      </div>
+
+      <!-- Learning Insights Section -->
+      <div class="learning-section">
+        <h3>یادگیری و بینش‌ها</h3>
+        <button id="refreshInsightsBtn">بروزرسانی بینش‌ها</button>
+        <div id="learningInsights" class="insights-container"></div>
+      </div>
+
+      <!-- Original sections -->
       <div>
-  <div id="liveBalance" class="balance"></div>
-  <h3>پیام‌ها</h3>
-  <div id="events" class="events"></div>
-  <h3>معاملات اخیر</h3>
+        <div id="liveBalance" class="balance"></div>
+        <h3>پیام‌ها</h3>
+        <div id="events" class="events"></div>
+        <h3>معاملات اخیر</h3>
         <table id="trades">
           <thead>
-            <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th></tr>
+            <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>PnL</th><th>Strategy</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        
+        <!-- Recent Trading Events -->
+        <h3>رویدادهای معاملاتی اخیر</h3>
+        <div class="event-controls">
+          <button id="refreshEventsBtn">بروزرسانی رویدادها</button>
+          <select id="eventTimeframe">
+            <option value="24">24 ساعت گذشته</option>
+            <option value="168">هفته گذشته</option>
+            <option value="720">ماه گذشته</option>
+          </select>
+        </div>
+        <table id="tradingEvents">
+          <thead>
+            <tr><th>زمان</th><th>نماد</th><th>عمل</th><th>دلیل</th><th>قیمت ورود</th><th>قیمت خروج</th><th>سود/زیان</th><th>نتیجه</th></tr>
           </thead>
           <tbody></tbody>
         </table>
